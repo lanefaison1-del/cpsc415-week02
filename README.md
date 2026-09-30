@@ -1,45 +1,58 @@
-# Artifact-chain template
+# cpsc415-week02: chat client
 
-Starting point for major project submissions in CPSC 415 (AI Integration, Trinity College). Click **Use this template** on GitHub to create your own repository from it. Do not fork.
+CPSC 415 (AI Integration), Week 2 lab. `chat.py` sends one question to a language model through an OpenAI-compatible API (OpenRouter by default), prints the answer, then prints one line with the model that answered and the input and output token counts. Results of the checks are in [CHECKS.md](CHECKS.md).
 
-The course follows Anthropic's [AI-Native SDLC Playbook](https://claude.com/blog/the-ai-native-sdlc-playbook): every stage of the work leaves a short, version-controlled artifact. The agent writes most of the code. You decide what gets built, steer, verify, and explain every choice. These files are how you prove you understood what the agent built.
+## How to run it
 
-## Early labs
+Python 3.9 or later, standard library only. Enter the key with the hidden prompt, one line at a time, so it never appears on screen or in a file:
 
-Week 1 uses the minimal repository described in the course handout. Later introductory labs complete only the stages assigned so far. This template describes the full chain for team projects and the final portfolio; it does not require unintroduced artifacts in Week 1. Project languages are chosen and justified, with one separate guided exercise in an unfamiliar language.
+```
+read -s "OPENROUTER_API_KEY?OpenRouter key: "
+export OPENROUTER_API_KEY
+export CHAT_BASE_URL=https://openrouter.ai/api/v1
+export CHAT_MODEL="minimax/minimax-m3"
+python3 chat.py "In one sentence, what is a context window?"
+```
 
-## The chain
+| Variable | Purpose |
+|---|---|
+| `CHAT_BASE_URL` | Where the request goes. OpenRouter: `https://openrouter.ai/api/v1`; a local Ollama server: `http://localhost:11434/v1` |
+| `CHAT_MODEL` | The model slug, for example `minimax/minimax-m3` |
+| `OPENROUTER_API_KEY` | The key, sent in the `Authorization` header and never stored in the repo |
+| `CHAT_API_KEY` | Optional. Used instead of `OPENROUTER_API_KEY` when set; any string works for a local model |
 
-| Stage | File | Written by | Approved by |
+The system message and `MAX_TOKENS` (600) are fixed constants at the top of `chat.py`. Changing the model means changing only `CHAT_MODEL`.
+
+## How it was built
+
+The intent in `intent/chat-client.md` came from a discovery interview with Claude Code (plain `claude` on my Claude subscription), which drafted it. I corrected the draft and approved it before any code was written. The code was written by Claude from the approved intent. `chat.py` itself calls OpenRouter with my OpenRouter key.
+
+## What I corrected in the intent
+
+1. **Cost.** The draft said each call "should cost cents at most." I never set that limit; the agent made it up. I replaced it with "cheap models only, no actual cost ceiling," because a limit I didn't choose shouldn't constrain the build.
+2. **Token counts.** I added that the program's token counts don't need to match OpenRouter's record exactly. The provider can count slightly differently from what the response reports, so "close" is the right success test, not "identical." In the end they matched exactly.
+
+I also answered the draft's open questions: print a clear error when something is missing, take the model name from the response (falling back to `CHAT_MODEL`), and join all command-line arguments into the question. When the agent's build plan left out my engineering-student system message and put `max_tokens` out of scope, I had both added to the intent before approving it.
+
+## One line I can explain
+
+```python
+usage = data.get("usage") or {}
+```
+
+The API's reply includes a `usage` block with the tokens the provider counted for this call: `prompt_tokens` (what I sent in) and `completion_tokens` (what the model generated). That's what I'm billed for. This line pulls that block out of the reply, and `or {}` means that if a provider leaves it out, the program prints `?` instead of crashing. The next line prints those counts, which is how I compared them against the OpenRouter Logs page.
+
+## Two models, one question
+
+For this one question I observed the following. This is one observation, not a benchmark.
+
+| Model | Answer (short) | Input / output tokens | Observed cost (OpenRouter Logs) |
 |---|---|---|---|
-| Plan | `intent/<name>.md` | The agent, after interviewing you | You |
-| Design | `spec.md` | The agent, from the approved intent | You, against the intent |
-| Build | `plan.md`, then code on a branch | The agent | You, before any code |
-| Test | tests, lint, CI | The agent | You confirm the loop actually ran |
-| Deploy | a pull request reviewed against `REVIEW.md` | A separate reviewing agent | You merge |
-| Maintain | a new `intent/<name>.md` | Triggered by a bug, a ticket, or a model change | You triage |
+| `minimax/minimax-m3` | Maximum amount of text, in tokens, a large language model can consider at one time; "essentially the size of its working memory" | 201 / 142 | $0.000196 |
+| `deepseek/deepseek-v4-pro-0813` | Maximum amount of text, in tokens, an AI model can consider at once | 35 / 28 | $0.000112 |
 
-`CLAUDE.md` and `REVIEW.md` travel with the repo and are graded artifacts.
+How the answers differed: the two definitions were nearly identical. MiniMax added a "working memory" comparison but used about five times as many output tokens for it, most of them hidden reasoning, so for this question it cost more for a similar answer.
 
-## Rules that are graded
+## Local model
 
-- Intent and spec exist before code. Plan is approved before implementation. The commit history shows it.
-- One pull request per feature, from a branch, reviewed before merge. Do not commit to `main` directly after the first commit.
-- `spec.md` states the **language** and the **model** for each component and why.
-- `ANNOTATION.md` answers the four questions for the finished project.
-- No secrets in the repo. `.claude/settings.local.json` and `.env` are ignored; the `.example` file shows the shape.
-
-## Submitting
-
-Tag the commit you are submitting and put the repository URL plus the tag on Moodle:
-
-```
-git tag tp1-submitted
-git push origin tp1-submitted
-```
-
-Tags the course uses: `intent-spec`, `tp1-submitted`, `tp2-submitted`, `portfolio-final`.
-
-## Running the agent
-
-Copy `.claude/settings.local.json.example` to `.claude/settings.local.json` and fill in your OpenRouter key and model slugs, or use the `orclaude` launcher from the [course repository](https://github.com/kousen/ai-integration-course/tree/main/scripts).
+Not tried: I don't have a local model installed.
