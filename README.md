@@ -25,8 +25,8 @@ The system message and `MAX_TOKENS` (600) are fixed constants at the top of `cha
 
 ## What I corrected in the intent
 
-1. **Cost ceiling.** The draft stated that each call "should cost cents at most." I never set that limit; it was an assumption written into the draft as though I had. I replaced it with "cheap models only, no actual cost ceiling," since a constraint I did not choose should not shape the build.
-2. **Token-count matching.** I added that the program's token counts need not match OpenRouter's record exactly. The provider meters usage on its own side, and a small discrepancy between what the response reports and what is billed would not indicate a fault in the program; "close" is therefore the appropriate success criterion. In practice, all four requests matched exactly.
+1. Cost ceiling.The draft stated that each call "should cost cents at most.", which I didn't specify. I replaced it with "cheap models only, no actual cost ceiling," since a constraint I did not choose should not shape the build.
+2. Token-count matching.I added that the program's token counts need not match OpenRouter's record exactly because i saw a small discrepancy between what the response reports and what is billed would not indicate a fault in the program. This turned out not to be a problem
 
 I also resolved the draft's open questions: the program prints a clear error when an input is missing, takes the model name from the response (falling back to `CHAT_MODEL`), and joins all command-line arguments into the question. When the build plan omitted my system message and placed `max_tokens` out of scope, I added both to the intent before approving it.
 
@@ -40,15 +40,15 @@ Every response from the API includes a `usage` block: the provider's count of `p
 
 ## Two models, one question
 
-For this one question I observed the following. This is one observation, not a benchmark.
+For this one question I observed the following.
 
 | Model | Answer (short) | Input / output tokens | Observed cost (OpenRouter Logs) |
 |---|---|---|---|
 | `minimax/minimax-m3` | Maximum amount of text, in tokens, a large language model can consider at one time; "essentially the size of its working memory" | 201 / 142 | $0.000196 |
 | `deepseek/deepseek-v4-pro-0813` | Maximum amount of text, in tokens, an AI model can consider at once | 35 / 28 | $0.000112 |
 
-How the answers differed: the two definitions were nearly identical. MiniMax added a comparison to working memory, but it used roughly five times as many output tokens to do so, most of them on hidden reasoning. For this question, it cost about 75% more for a marginally longer answer.
+the two definitions were almost identical. MiniMax added a comparison to working memory, but it used~ five times as many output tokens. For this question, it cost about almost twice as muchh  more for a somewhat longer answer.
 
 ## Local model
 
-Not tried: I do not have a local model installed.
+I do not have a local model installed.
