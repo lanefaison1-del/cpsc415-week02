@@ -23,16 +23,12 @@ python3 chat.py "In one sentence, what is a context window?"
 
 The system message and `MAX_TOKENS` (600) are fixed constants at the top of `chat.py`. Changing the model means changing only `CHAT_MODEL`.
 
-## How it was built
-
-The intent in `intent/chat-client.md` came from a discovery interview with Claude Code (plain `claude` on my Claude subscription), which drafted it. I corrected the draft and approved it before any code was written. The code was written by Claude from the approved intent. `chat.py` itself calls OpenRouter with my OpenRouter key.
-
 ## What I corrected in the intent
 
-1. **Cost.** The draft said each call "should cost cents at most." I never set that limit; the agent made it up. I replaced it with "cheap models only, no actual cost ceiling," because a limit I didn't choose shouldn't constrain the build.
-2. **Token counts.** I added that the program's token counts don't need to match OpenRouter's record exactly. The provider can count slightly differently from what the response reports, so "close" is the right success test, not "identical." In the end they matched exactly.
+1. **Cost ceiling.** The draft stated that each call "should cost cents at most." I never set that limit; it was an assumption written into the draft as though I had. I replaced it with "cheap models only, no actual cost ceiling," since a constraint I did not choose should not shape the build.
+2. **Token-count matching.** I added that the program's token counts need not match OpenRouter's record exactly. The provider meters usage on its own side, and a small discrepancy between what the response reports and what is billed would not indicate a fault in the program; "close" is therefore the appropriate success criterion. In practice, all four requests matched exactly.
 
-I also answered the draft's open questions: print a clear error when something is missing, take the model name from the response (falling back to `CHAT_MODEL`), and join all command-line arguments into the question. When the agent's build plan left out my engineering-student system message and put `max_tokens` out of scope, I had both added to the intent before approving it.
+I also resolved the draft's open questions: the program prints a clear error when an input is missing, takes the model name from the response (falling back to `CHAT_MODEL`), and joins all command-line arguments into the question. When the build plan omitted my system message and placed `max_tokens` out of scope, I added both to the intent before approving it.
 
 ## One line I can explain
 
@@ -40,7 +36,7 @@ I also answered the draft's open questions: print a clear error when something i
 usage = data.get("usage") or {}
 ```
 
-The API's reply includes a `usage` block with the tokens the provider counted for this call: `prompt_tokens` (what I sent in) and `completion_tokens` (what the model generated). That's what I'm billed for. This line pulls that block out of the reply, and `or {}` means that if a provider leaves it out, the program prints `?` instead of crashing. The next line prints those counts, which is how I compared them against the OpenRouter Logs page.
+Every response from the API includes a `usage` block: the provider's count of `prompt_tokens` (the input I sent) and `completion_tokens` (the output the model generated). That count is what I am billed for. This line extracts the block from the response; the `or {}` ensures that if a provider omits it, the program prints `?` rather than crashing. The line that follows prints those counts, which is what I compared against OpenRouter's Logs page in CHECKS.md.
 
 ## Two models, one question
 
@@ -51,8 +47,8 @@ For this one question I observed the following. This is one observation, not a b
 | `minimax/minimax-m3` | Maximum amount of text, in tokens, a large language model can consider at one time; "essentially the size of its working memory" | 201 / 142 | $0.000196 |
 | `deepseek/deepseek-v4-pro-0813` | Maximum amount of text, in tokens, an AI model can consider at once | 35 / 28 | $0.000112 |
 
-How the answers differed: the two definitions were nearly identical. MiniMax added a "working memory" comparison but used about five times as many output tokens for it, most of them hidden reasoning, so for this question it cost more for a similar answer.
+How the answers differed: the two definitions were nearly identical. MiniMax added a comparison to working memory, but it used roughly five times as many output tokens to do so, most of them on hidden reasoning. For this question, it cost about 75% more for a marginally longer answer.
 
 ## Local model
 
-Not tried: I don't have a local model installed.
+Not tried: I do not have a local model installed.
